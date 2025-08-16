@@ -1,0 +1,193 @@
+{
+  "name": "News Organiser",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 2,
+        "simple": false,
+        "filters": {
+          "receivedAfter": "2025-08-08T00:00:00",
+          "sender": "dan@tldrnewsletter.com"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        624,
+        384
+      ],
+      "id": "67116e58-73ef-46e3-9edf-d3298caeea5d",
+      "name": "Get many messages",
+      "webhookId": "a8a1963f-27ee-495e-92b2-67e795bd0f48",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "hDSDmaVmNJpG28n9",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "items = _input.all()  # You'll need to adapt this for Python's data input\n\nextracted_data = []\n\nfor item in items:\n    subject = item[\"json\"].get(\"subject\")\n    content = item[\"json\"].get(\"text\")\n    date = item[\"json\"].get(\"date\")\n    sender = item[\"json\"][\"from\"][\"value\"][0][\"address\"]\n    \n    extracted_data.append({\n        \"subject\": subject,\n        \"content\": content,\n        \"sender\": sender,\n        \"date\": date\n    })\n\nreturn extracted_data\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        384
+      ],
+      "id": "3993e497-7f7a-463e-b30d-cb241ecfb2dd",
+      "name": "Process emails"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=\n---\nIgnore the ads and sponsors.\nExtract the news based on the following schema\n{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"title\": {\n        \"type\": \"string\",\n        \"description\": \"The title of the item\"\n      },\n      \"content\": {\n        \"type\": \"string\",\n        \"description\": \"The main content or body text of the item\"\n      },\n      \"link\": {\n        \"type\": \"string\",\n        \"format\": \"uri\",\n        \"description\": \"A URL linking to the item\"\n      },\n      \"source_subject\": {\n        \"type\": \"string\",\n        \"description\": \"The subject or category from which the item originates\"\n      }\n    },\n    \"required\": [\"title\", \"content\", \"link\", \"source_subject\"],\n    \"additionalProperties\": false\n  }\n}\n {{ $json.content }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        384
+      ],
+      "id": "695e41c3-c712-4f62-8fd9-2a9efc01e40c",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "zeBWWzIAhcPvRACE",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import json\noutputs = []\nfor item in _input.all():\n  objects = json.loads(item.json.content.parts[0][\"text\"])\n  for object in objects:\n    outputs.append(object)\nreturn outputs"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        384
+      ],
+      "id": "53fb1057-dca5-4acc-9824-0ae6afcc3350",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "2495cebc-70b9-807b-8a1a-c742ad74d699",
+          "mode": "list",
+          "cachedResultName": "Feed",
+          "cachedResultUrl": "https://www.notion.so/2495cebc70b9807b8a1ac742ad74d699"
+        },
+        "title": "={{ $json.title }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "content|rich_text",
+              "textContent": "={{ $json.content }}"
+            },
+            {
+              "key": "link|url",
+              "urlValue": "={{ $json.link }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        384
+      ],
+      "id": "2385adfa-4fc9-4874-b285-bd7e06f3d005",
+      "name": "Create a database page",
+      "executeOnce": false,
+      "credentials": {
+        "notionApi": {
+          "id": "eXeigzjWH6HejG0k",
+          "name": "Notion account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get many messages": {
+      "main": [
+        [
+          {
+            "node": "Process emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process emails": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "da343d64-c4e1-4349-9876-c13e95d52c62",
+  "meta": {
+    "templateId": "5678",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a662f07b5e9bb34739299ad6ddb9c943b164acebdad3b52ccd9c6ef6d528ec18"
+  },
+  "id": "CfNQWweItN7kuDeb",
+  "tags": []
+}
