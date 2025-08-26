@@ -12,5 +12,4 @@ Write Documentation about
 2. Core stacks:  
     For each framework/library:
     - Describe its role in the project.
-    - If helpful, show an example snippet where it is used and how it supports project functionality.
     - Suggest alternatives and when they might be preferable.
