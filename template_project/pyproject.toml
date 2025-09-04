@@ -1,0 +1,24 @@
+[project]
+name = "template-project"
+version = "0.1"
+description = "markdown to video"
+readme = "README.md"
+requires-python = ">3.12, <=3.13"
+license = {text = "MIT"}
+authors = [
+    {name = "X-T", email = "txw0817@gmail.com"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+dependencies = [
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
+asyncio_mode = "auto"
